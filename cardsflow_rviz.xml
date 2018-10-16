@@ -1,0 +1,9 @@
+<library path="libcardsflow_rviz">
+    <class name="CardsflowRviz"
+           type="CardsflowRviz"
+           base_class_type="rviz::Panel">
+        <description>
+            A panel widget for cardsflow visualization
+        </description>
+    </class>
+</library>
