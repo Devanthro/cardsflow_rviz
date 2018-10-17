@@ -88,6 +88,11 @@ public Q_SLOTS:
      */
     void show_torque();
 
+    /**
+     * Visualization
+     */
+    void visualize();
+
 private:
     /**
      * Callback to robot state messages
@@ -99,12 +104,8 @@ private:
      * @param msg
      */
     void TendonState(const roboy_communication_simulation::TendonConstPtr &msg);
-
-    /**
-     * Visualization loop, run in a detached thread
-     */
-    void visualizationLoop();
-
+Q_SIGNALS:
+    void newData();
 private:
     ros::NodeHandlePtr nh;
     boost::shared_ptr<ros::AsyncSpinner> spinner;
@@ -121,8 +122,6 @@ private:
     };
     map<string, Tendon> tendon;
     bool visualize_mesh, visualize_tendon, visualize_force, visualize_torque;
-    boost::shared_ptr<std::thread> visualization_thread;
     QPushButton *show_mesh_button, *show_tendon_button, *show_force_button, *show_torque_button;
     string robot_name;
-    bool shutdown = false;
 };

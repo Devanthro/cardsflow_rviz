@@ -19,21 +19,25 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
     tabPage->addTab(connectWidget, "connect");
 
     show_mesh_button = new QPushButton(tr("show_mesh"));
+    show_mesh_button->setObjectName("show_mesh");
     show_mesh_button->setCheckable(true);
     connect(show_mesh_button, SIGNAL(clicked()), this, SLOT(show_mesh()));
     connectWidget->layout()->addWidget(show_mesh_button);
 
     show_tendon_button = new QPushButton(tr("show_tendon"));
+    show_tendon_button->setObjectName("show_tendon");
     show_tendon_button->setCheckable(true);
     connect(show_tendon_button, SIGNAL(clicked()), this, SLOT(show_tendon()));
     connectWidget->layout()->addWidget(show_tendon_button);
 
     show_force_button = new QPushButton(tr("show_force"));
+    show_force_button->setObjectName("show_force");
     show_force_button->setCheckable(true);
     connect(show_force_button, SIGNAL(clicked()), this, SLOT(show_force()));
     connectWidget->layout()->addWidget(show_force_button);
 
     show_torque_button = new QPushButton(tr("show_torque"));
+    show_torque_button->setObjectName("show_torque");
     show_torque_button->setCheckable(true);
     connect(show_torque_button, SIGNAL(clicked()), this, SLOT(show_torque()));
     connectWidget->layout()->addWidget(show_torque_button);
@@ -71,13 +75,10 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
     else
         nh->getParam("robot_name", robot_name);
 
+    QObject::connect(this, SIGNAL(newData()), this, SLOT(visualize()));
 }
 
 CardsflowRviz::~CardsflowRviz() {
-    shutdown = true;
-    ROS_INFO("waiting for visualization thread to terminate");
-    if (visualization_thread->joinable())
-        visualization_thread->join();
 }
 
 void CardsflowRviz::load(const rviz::Config &config) {
@@ -91,8 +92,6 @@ void CardsflowRviz::load(const rviz::Config &config) {
     show_force_button->setChecked(ticked.toBool());
     config.mapGetValue(show_torque_button->objectName(), &ticked);
     show_torque_button->setChecked(ticked.toBool());
-    visualization_thread = boost::shared_ptr<std::thread>(new std::thread(&CardsflowRviz::visualizationLoop, this));
-    visualization_thread->detach();
     show_mesh();
     show_tendon();
     show_force();
@@ -125,6 +124,7 @@ void CardsflowRviz::show_torque() {
 
 void CardsflowRviz::RobotState(const geometry_msgs::PoseStampedConstPtr &msg) {
     pose[msg->header.frame_id] = msg->pose;
+    Q_EMIT newData();
 }
 
 void CardsflowRviz::TendonState(const roboy_communication_simulation::TendonConstPtr &msg) {
@@ -134,48 +134,104 @@ void CardsflowRviz::TendonState(const roboy_communication_simulation::TendonCons
     t.ld = msg->ld;
     t.viaPoints = msg->viaPoints;
     tendon[msg->name] = t;
+    Q_EMIT newData();
 }
 
-void CardsflowRviz::visualizationLoop() {
-    ros::Rate r(30);
-    while (ros::ok() && !shutdown) {
-        int message_id = 0;
-        if (visualize_mesh) {
-            for (auto p:pose) {
-                publishMesh("robots", (robot_name + "/meshes/CAD").c_str(), (p.first + ".stl").c_str(), p.second, 0.001,
-                            "world", "mesh", message_id++, 1);
+void CardsflowRviz::visualize() {
+    int message_id = 0;
+    if (visualize_mesh) {
+        for (auto p:pose) {
+            publishMesh("robots", (robot_name + "/meshes/CAD").c_str(), (p.first + ".stl").c_str(), p.second, 0.001,
+                        "world", "mesh", message_id++, 1);
+        }
+    }
+    if (visualize_tendon) {
+        visualization_msgs::Marker line_strip;
+        line_strip.header.frame_id = "world";
+        line_strip.header.stamp = ros::Time::now();
+        line_strip.ns = "tendon";
+        line_strip.action = visualization_msgs::Marker::ADD;
+        line_strip.type = visualization_msgs::Marker::LINE_STRIP;
+        line_strip.scale.x = 0.003;
+        line_strip.color.b = 1.0;
+        line_strip.color.a = 1.0;
+        line_strip.pose.orientation.w = 1.0;
+        line_strip.lifetime = ros::Duration(1);
+        for (auto t:tendon) {
+            line_strip.points.clear();
+            line_strip.id = message_id++;
+            for (int i = 1; i < t.second.viaPoints.size(); i++) {
+                geometry_msgs::Point p;
+                p.x = t.second.viaPoints[i - 1].x;
+                p.y = t.second.viaPoints[i - 1].y;
+                p.z = t.second.viaPoints[i - 1].z;
+                line_strip.points.push_back(p);
+                p.x = t.second.viaPoints[i].x;
+                p.y = t.second.viaPoints[i].y;
+                p.z = t.second.viaPoints[i].z;
+                line_strip.points.push_back(p);
+                visualization_pub.publish(line_strip);
             }
         }
-        if (visualize_tendon) {
-            visualization_msgs::Marker line_strip;
-            line_strip.header.frame_id = "world";
-            line_strip.header.stamp = ros::Time::now();
-            line_strip.ns = "tendon";
-            line_strip.action = visualization_msgs::Marker::ADD;
-            line_strip.type = visualization_msgs::Marker::LINE_STRIP;
-            line_strip.scale.x = 0.003;
-            line_strip.color.b = 1.0;
-            line_strip.color.a = 1.0;
-            line_strip.pose.orientation.w = 1.0;
-            line_strip.lifetime = ros::Duration(1);
-            for (auto t:tendon) {
-                line_strip.points.clear();
-                line_strip.id = message_id++;
-                for (int i = 1; i < t.second.viaPoints.size(); i++) {
-                    geometry_msgs::Point p;
-                    p.x = t.second.viaPoints[i - 1].x;
-                    p.y = t.second.viaPoints[i - 1].y;
-                    p.z = t.second.viaPoints[i - 1].z;
-                    line_strip.points.push_back(p);
-                    p.x = t.second.viaPoints[i].x;
-                    p.y = t.second.viaPoints[i].y;
-                    p.z = t.second.viaPoints[i].z;
-                    line_strip.points.push_back(p);
-                    visualization_pub.publish(line_strip);
-                }
+    }
+    if(visualize_force){
+        visualization_msgs::Marker arrow;
+        arrow.header.frame_id = "world";
+        arrow.ns = "force";
+        arrow.type = visualization_msgs::Marker::ARROW;
+        arrow.color.a = 1.0;
+        arrow.lifetime = ros::Duration(1);
+        arrow.scale.x = 0.005;
+        arrow.scale.y = 0.01;
+        arrow.scale.z = 0.01;
+        arrow.pose.orientation.w = 1;
+        arrow.pose.orientation.x = 0;
+        arrow.pose.orientation.y = 0;
+        arrow.pose.orientation.z = 0;
+
+        arrow.action = visualization_msgs::Marker::ADD;
+
+        for (auto t:tendon) {
+            for (int i = 1; i < t.second.viaPoints.size(); i++) {
+                geometry_msgs::Vector3 dir;
+                dir.x = t.second.viaPoints[i].x-t.second.viaPoints[i - 1].x;
+                dir.y = t.second.viaPoints[i].y-t.second.viaPoints[i - 1].y;
+                dir.z = t.second.viaPoints[i].z-t.second.viaPoints[i - 1].z;
+                // actio
+                arrow.id = message_id++;
+                arrow.color.r = 0.0f;
+                arrow.color.g = 1.0f;
+                arrow.color.b = 0.0f;
+                arrow.header.stamp = ros::Time::now();
+                arrow.points.clear();
+                geometry_msgs::Point p;
+                p.x = t.second.viaPoints[i - 1].x;
+                p.y = t.second.viaPoints[i - 1].y;
+                p.z = t.second.viaPoints[i - 1].z;
+                arrow.points.push_back(p);
+                p.x += dir.x * 0.001; // show fraction of force
+                p.y += dir.y * 0.001;
+                p.z += dir.z * 0.001;
+                arrow.points.push_back(p);
+                visualization_pub.publish(arrow);
+                // reactio
+                arrow.id = message_id++;
+                arrow.color.r = 1.0f;
+                arrow.color.g = 1.0f;
+                arrow.color.b = 0.0f;
+                arrow.header.stamp = ros::Time::now();
+                arrow.points.clear();
+                p.x = t.second.viaPoints[i].x;
+                p.y = t.second.viaPoints[i].y;
+                p.z = t.second.viaPoints[i].z;
+                arrow.points.push_back(p);
+                p.x -= dir.x * 0.001;
+                p.y -= dir.y * 0.001;
+                p.z -= dir.z * 0.001;
+                arrow.points.push_back(p);
+                visualization_pub.publish(arrow);
             }
         }
-        r.sleep();
     }
 }
 
