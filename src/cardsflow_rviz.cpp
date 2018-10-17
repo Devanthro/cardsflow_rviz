@@ -67,8 +67,8 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
 
     spinner = boost::shared_ptr<ros::AsyncSpinner>(new ros::AsyncSpinner(0));
 
-    robot_state = nh->subscribe("/robot_state", 1, &CardsflowRviz::RobotState, this);
-    tendon_state = nh->subscribe("/tendon_state", 1, &CardsflowRviz::TendonState, this);
+    robot_state = nh->subscribe("/robot_state", 100, &CardsflowRviz::RobotState, this);
+    tendon_state = nh->subscribe("/tendon_state", 100, &CardsflowRviz::TendonState, this);
 
     if (!nh->hasParam("robot_name"))
         ROS_FATAL("robot_name could not be found on parameter server!!! ");
@@ -146,9 +146,9 @@ void CardsflowRviz::visualize() {
         }
     }
     if (visualize_tendon) {
+        message_id = 6666;
         visualization_msgs::Marker line_strip;
         line_strip.header.frame_id = "world";
-        line_strip.header.stamp = ros::Time::now();
         line_strip.ns = "tendon";
         line_strip.action = visualization_msgs::Marker::ADD;
         line_strip.type = visualization_msgs::Marker::LINE_STRIP;
@@ -158,6 +158,7 @@ void CardsflowRviz::visualize() {
         line_strip.pose.orientation.w = 1.0;
         line_strip.lifetime = ros::Duration(1);
         for (auto t:tendon) {
+            line_strip.header.stamp = ros::Time::now();
             line_strip.points.clear();
             line_strip.id = message_id++;
             for (int i = 1; i < t.second.viaPoints.size(); i++) {
@@ -170,11 +171,12 @@ void CardsflowRviz::visualize() {
                 p.y = t.second.viaPoints[i].y;
                 p.z = t.second.viaPoints[i].z;
                 line_strip.points.push_back(p);
-                visualization_pub.publish(line_strip);
             }
+            visualization_pub.publish(line_strip);
         }
     }
     if(visualize_force){
+        message_id = 66666666;
         visualization_msgs::Marker arrow;
         arrow.header.frame_id = "world";
         arrow.ns = "force";
