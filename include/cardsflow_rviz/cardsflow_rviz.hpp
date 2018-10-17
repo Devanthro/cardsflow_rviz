@@ -77,6 +77,10 @@ public Q_SLOTS:
      * Toggles tendon visualization
      */
     void show_tendon();
+    /**
+     * Toggles tendon length visualization
+     */
+    void show_tendon_length();
 
     /**
      * Toggles force visualization
@@ -121,7 +125,7 @@ private:
         vector<geometry_msgs::Vector3> viaPoints;
     };
     map<string, Tendon> tendon;
-    bool visualize_mesh, visualize_tendon, visualize_force, visualize_torque;
-    QPushButton *show_mesh_button, *show_tendon_button, *show_force_button, *show_torque_button;
+    bool visualize_mesh, visualize_tendon, visualize_tendon_length, visualize_force, visualize_torque;
+    QPushButton *show_mesh_button, *show_tendon_button, *show_force_button, *show_torque_button, *show_tendon_length_button;
     string robot_name;
 };

@@ -30,6 +30,12 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
     connect(show_tendon_button, SIGNAL(clicked()), this, SLOT(show_tendon()));
     connectWidget->layout()->addWidget(show_tendon_button);
 
+    show_tendon_length_button = new QPushButton(tr("show_tendon_length"));
+    show_tendon_length_button->setObjectName("show_tendon_length");
+    show_tendon_length_button->setCheckable(true);
+    connect(show_tendon_length_button, SIGNAL(clicked()), this, SLOT(show_tendon_length()));
+    connectWidget->layout()->addWidget(show_tendon_length_button);
+
     show_force_button = new QPushButton(tr("show_force"));
     show_force_button->setObjectName("show_force");
     show_force_button->setCheckable(true);
@@ -88,6 +94,8 @@ void CardsflowRviz::load(const rviz::Config &config) {
     show_mesh_button->setChecked(ticked.toBool());
     config.mapGetValue(show_tendon_button->objectName(), &ticked);
     show_tendon_button->setChecked(ticked.toBool());
+    config.mapGetValue(show_tendon_length_button->objectName(), &ticked);
+    show_tendon_length_button->setChecked(ticked.toBool());
     config.mapGetValue(show_force_button->objectName(), &ticked);
     show_force_button->setChecked(ticked.toBool());
     config.mapGetValue(show_torque_button->objectName(), &ticked);
@@ -101,6 +109,7 @@ void CardsflowRviz::load(const rviz::Config &config) {
 void CardsflowRviz::save(rviz::Config config) const {
     config.mapSetValue(show_mesh_button->objectName(), show_mesh_button->isChecked());
     config.mapSetValue(show_tendon_button->objectName(), show_tendon_button->isChecked());
+    config.mapSetValue(show_tendon_length_button->objectName(), show_tendon_length_button->isChecked());
     config.mapSetValue(show_force_button->objectName(), show_force_button->isChecked());
     config.mapSetValue(show_torque_button->objectName(), show_torque_button->isChecked());
     rviz::Panel::save(config);
@@ -112,6 +121,10 @@ void CardsflowRviz::show_mesh() {
 
 void CardsflowRviz::show_tendon() {
     visualize_tendon = show_tendon_button->isChecked();
+}
+
+void CardsflowRviz::show_tendon_length() {
+    visualize_tendon_length = show_tendon_length_button->isChecked();
 }
 
 void CardsflowRviz::show_force() {
@@ -173,6 +186,16 @@ void CardsflowRviz::visualize() {
                 line_strip.points.push_back(p);
             }
             visualization_pub.publish(line_strip);
+        }
+    }
+    if(visualize_tendon_length){
+        for (auto t:tendon) {
+            Vector3d pos ((t.second.viaPoints[1].x + t.second.viaPoints[0].x)/2.0,
+             (t.second.viaPoints[1].y + t.second.viaPoints[0].y)/2.0,
+             (t.second.viaPoints[1].z + t.second.viaPoints[0].z)/2.0);
+            char str[100];
+            sprintf(str, "%.3f", t.second.l);
+            publishText(pos,str,"world","tendon_length",message_id++,COLOR(1,1,1,1),1,0.01);
         }
     }
     if(visualize_force){
