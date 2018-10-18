@@ -73,8 +73,8 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
 
     spinner = boost::shared_ptr<ros::AsyncSpinner>(new ros::AsyncSpinner(0));
 
-    robot_state = nh->subscribe("/robot_state", 100, &CardsflowRviz::RobotState, this);
-    tendon_state = nh->subscribe("/tendon_state", 100, &CardsflowRviz::TendonState, this);
+    robot_state = nh->subscribe("/robot_state", 500, &CardsflowRviz::RobotState, this);
+    tendon_state = nh->subscribe("/tendon_state", 500, &CardsflowRviz::TendonState, this);
 
     if (!nh->hasParam("robot_name"))
         ROS_FATAL("robot_name could not be found on parameter server!!! ");
