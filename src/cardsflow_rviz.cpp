@@ -137,7 +137,6 @@ void CardsflowRviz::show_torque() {
 
 void CardsflowRviz::RobotState(const geometry_msgs::PoseStampedConstPtr &msg) {
     pose[msg->header.frame_id] = msg->pose;
-    Q_EMIT newData();
 }
 
 void CardsflowRviz::TendonState(const roboy_communication_simulation::TendonConstPtr &msg) {
@@ -151,15 +150,17 @@ void CardsflowRviz::TendonState(const roboy_communication_simulation::TendonCons
 }
 
 void CardsflowRviz::visualize() {
-    int message_id = 0;
+    int message_id = 6666;
     if (visualize_mesh) {
         for (auto p:pose) {
             publishMesh("robots", (robot_name + "/meshes/CAD").c_str(), (p.first + ".stl").c_str(), p.second, 0.001,
                         "world", "mesh", message_id++, 1);
+            tf::Transform bt;
+            PoseMsgToTF(p.second,bt);
+            tf_broadcaster.sendTransform(tf::StampedTransform(bt, ros::Time::now(), "world", p.first));
         }
     }
     if (visualize_tendon) {
-        message_id = 6666;
         visualization_msgs::Marker line_strip;
         line_strip.header.frame_id = "world";
         line_strip.ns = "tendon";
@@ -199,7 +200,6 @@ void CardsflowRviz::visualize() {
         }
     }
     if(visualize_force){
-        message_id = 66666666;
         visualization_msgs::Marker arrow;
         arrow.header.frame_id = "world";
         arrow.ns = "force";
