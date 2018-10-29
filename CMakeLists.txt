@@ -43,7 +43,7 @@ include_directories(
 #==============================================================================
 
 qt5_wrap_cpp(MOC_FILES include/cardsflow_rviz/cardsflow_rviz.hpp )
-add_library( cardsflow_rviz src/cardsflow_rviz.cpp ${MOC_FILES})
+add_library( cardsflow_rviz src/cardsflow_rviz.cpp ../common_utilities/src/rviz_visualization.cpp ${MOC_FILES})
 target_link_libraries( cardsflow_rviz ${QT_LIBRARIES} ${catkin_LIBRARIES} )
 
 #==============================================================================

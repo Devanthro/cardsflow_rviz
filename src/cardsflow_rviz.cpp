@@ -189,16 +189,16 @@ void CardsflowRviz::visualize() {
             visualization_pub.publish(line_strip);
         }
     }
-    if(visualize_tendon_length){
-        for (auto t:tendon) {
-            Vector3d pos ((t.second.viaPoints[1].x + t.second.viaPoints[0].x)/2.0,
-             (t.second.viaPoints[1].y + t.second.viaPoints[0].y)/2.0,
-             (t.second.viaPoints[1].z + t.second.viaPoints[0].z)/2.0);
-            char str[100];
-            sprintf(str, "%.3f", t.second.l);
-            publishText(pos,str,"world","tendon_length",message_id++,COLOR(1,1,1,1),1,0.01);
-        }
-    }
+//    if(visualize_tendon_length){
+//        for (auto t:tendon) {
+//            Vector3d pos ((t.second.viaPoints[1].x + t.second.viaPoints[0].x)/2.0,
+//             (t.second.viaPoints[1].y + t.second.viaPoints[0].y)/2.0,
+//             (t.second.viaPoints[1].z + t.second.viaPoints[0].z)/2.0);
+//            char str[100];
+//            sprintf(str, "%.3f", t.second.l);
+//            publishText(pos,str,"world","tendon_length",message_id++,COLOR(1,1,1,1),1,0.01);
+//        }
+//    }
     if(visualize_force){
         visualization_msgs::Marker arrow;
         arrow.header.frame_id = "world";
