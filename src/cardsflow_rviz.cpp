@@ -152,8 +152,17 @@ void CardsflowRviz::TendonState(const roboy_communication_simulation::TendonCons
 void CardsflowRviz::visualize() {
     int message_id = 6666;
     // Allow change of robot_name during visualization
-    if (nh->hasParam("robot_name"))
+    if (nh->hasParam("robot_name")){
+        string prev_robot_name;
+        prev_robot_name.assign(robot_name);
         nh->getParam("robot_name", robot_name);
+        // Init pose and tendon if changed robot
+        if (robot_name.compare(prev_robot_name)){
+            ROS_INFO_STREAM("Changing robot from " << prev_robot_name << " to " << robot_name);
+            pose.clear();
+            tendon.clear();
+        }
+    }
     if (visualize_mesh) {
         for (auto p:pose) {
             publishMesh("robots", (robot_name + "/meshes/CAD").c_str(), (p.first + ".stl").c_str(), p.second, 0.001,
