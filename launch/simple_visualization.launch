@@ -1,0 +1,7 @@
+<launch>
+    <arg name="robot_name" default="Example 2R planar XZ"/>
+
+    <param name="robot_name" type="string" value="$(arg robot_name)" />
+
+    <node name="rviz" pkg="rviz" type="rviz" respawn="false" output="screen" />
+</launch>
