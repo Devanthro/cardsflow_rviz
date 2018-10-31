@@ -151,6 +151,9 @@ void CardsflowRviz::TendonState(const roboy_communication_simulation::TendonCons
 
 void CardsflowRviz::visualize() {
     int message_id = 6666;
+    // Allow change of robot_name during visualization
+    if (nh->hasParam("robot_name"))
+        nh->getParam("robot_name", robot_name);
     if (visualize_mesh) {
         for (auto p:pose) {
             publishMesh("robots", (robot_name + "/meshes/CAD").c_str(), (p.first + ".stl").c_str(), p.second, 0.001,
@@ -161,12 +164,16 @@ void CardsflowRviz::visualize() {
         }
     }
     if (visualize_tendon) {
+        // Allow change of cable scale for robots of different sizes
+        double cable_scale = 0.003;   // default scale
+        if (nh->hasParam("cable_scale"))
+            nh->getParam("cable_scale", cable_scale);
         visualization_msgs::Marker line_strip;
         line_strip.header.frame_id = "world";
         line_strip.ns = "tendon";
         line_strip.action = visualization_msgs::Marker::ADD;
         line_strip.type = visualization_msgs::Marker::LINE_STRIP;
-        line_strip.scale.x = 0.003;
+        line_strip.scale.x = cable_scale;
         line_strip.color.b = 1.0;
         line_strip.color.a = 1.0;
         line_strip.pose.orientation.w = 1.0;
