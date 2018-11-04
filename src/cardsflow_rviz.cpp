@@ -75,13 +75,16 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
 
     robot_state = nh->subscribe("/robot_state", 500, &CardsflowRviz::RobotState, this);
     tendon_state = nh->subscribe("/tendon_state", 500, &CardsflowRviz::TendonState, this);
+    joint_state = nh->subscribe("/joint_state", 500, &CardsflowRviz::JointState, this);
 
     if (!nh->hasParam("robot_name"))
         ROS_FATAL("robot_name could not be found on parameter server!!! ");
     else
         nh->getParam("robot_name", robot_name);
 
-    QObject::connect(this, SIGNAL(newData()), this, SLOT(visualize()));
+    QObject::connect(this, SIGNAL(visualizeMeshSignal()), this, SLOT(visualizeMesh()));
+    QObject::connect(this, SIGNAL(visualizeTendonSignal()), this, SLOT(visualizeTendon()));
+    QObject::connect(this, SIGNAL(visualizeTorqueSignal()), this, SLOT(visualizeTorque()));
 }
 
 CardsflowRviz::~CardsflowRviz() {
@@ -102,6 +105,7 @@ void CardsflowRviz::load(const rviz::Config &config) {
     show_torque_button->setChecked(ticked.toBool());
     show_mesh();
     show_tendon();
+    show_tendon_length();
     show_force();
     show_torque();
 }
@@ -137,41 +141,64 @@ void CardsflowRviz::show_torque() {
 
 void CardsflowRviz::RobotState(const geometry_msgs::PoseStampedConstPtr &msg) {
     pose[msg->header.frame_id] = msg->pose;
+    if (visualize_mesh)
+            emit visualizeMeshSignal();
 }
 
 void CardsflowRviz::TendonState(const roboy_communication_simulation::TendonConstPtr &msg) {
-    Tendon t;
-    t.force = msg->force;
-    t.l = msg->l;
-    t.ld = msg->ld;
-    t.viaPoints = msg->viaPoints;
-    tendon[msg->name] = t;
-    Q_EMIT newData();
+    int offset = 0;
+    for (int i = 0; i < msg->name.size(); i++) {
+        Tendon t;
+        t.force = msg->force[i];
+        t.l = msg->l[i];
+        t.ld = msg->ld[i];
+        for (int v = 0; v < msg->number_of_viapoints[i]; v++) {
+            t.viaPoints.push_back(msg->viaPoints[v + offset]);
+        }
+        tendon[msg->name[i]] = t;
+        offset += msg->number_of_viapoints[i];
+    }
+    if (visualize_tendon||visualize_tendon_length||visualize_force)
+            emit visualizeTendonSignal();
 }
 
-void CardsflowRviz::visualize() {
-    int message_id = 6666;
+void CardsflowRviz::JointState(const roboy_communication_simulation::JointStateConstPtr &msg) {
+    int j = 0;
+    for (auto name:msg->names) {
+        joint_origin[name] = msg->origin[j];
+        joint_axis[name] = msg->axis[j];
+        torque[name] = msg->torque[j];
+        j++;
+    }
+    if (visualize_torque)
+            emit visualizeTorqueSignal();
+}
+
+void CardsflowRviz::visualizeMesh() {
     // Allow change of robot_name during visualization
-    if (nh->hasParam("robot_name")){
+    if (nh->hasParam("robot_name")) {
         string prev_robot_name;
         prev_robot_name.assign(robot_name);
         nh->getParam("robot_name", robot_name);
         // Init pose and tendon if changed robot
-        if (robot_name.compare(prev_robot_name)){
+        if (robot_name.compare(prev_robot_name)) {
             ROS_INFO_STREAM("Changing robot from " << prev_robot_name << " to " << robot_name);
             pose.clear();
             tendon.clear();
         }
     }
-    if (visualize_mesh) {
-        for (auto p:pose) {
-            publishMesh("robots", (robot_name + "/meshes/CAD").c_str(), (p.first + ".stl").c_str(), p.second, 0.001,
-                        "world", "mesh", message_id++, 1);
-            tf::Transform bt;
-            PoseMsgToTF(p.second,bt);
-            tf_broadcaster.sendTransform(tf::StampedTransform(bt, ros::Time::now(), "world", p.first));
-        }
+    int message_id = 0;
+    for (auto p:pose) {
+        publishMesh("robots", (robot_name + "/meshes/CAD").c_str(), (p.first + ".stl").c_str(), p.second, 0.001,
+                    "world", "mesh", message_id++, 1);
+        tf::Transform bt;
+        PoseMsgToTF(p.second, bt);
+        tf_broadcaster.sendTransform(tf::StampedTransform(bt, ros::Time::now(), "world", p.first));
     }
+}
+
+void CardsflowRviz::visualizeTendon() {
+    int message_id = 10000;
     if (visualize_tendon) {
         // Allow change of cable scale for robots of different sizes
         double cable_scale = 0.003;   // default scale
@@ -205,17 +232,17 @@ void CardsflowRviz::visualize() {
             visualization_pub.publish(line_strip);
         }
     }
-//    if(visualize_tendon_length){
-//        for (auto t:tendon) {
-//            Vector3d pos ((t.second.viaPoints[1].x + t.second.viaPoints[0].x)/2.0,
-//             (t.second.viaPoints[1].y + t.second.viaPoints[0].y)/2.0,
-//             (t.second.viaPoints[1].z + t.second.viaPoints[0].z)/2.0);
-//            char str[100];
-//            sprintf(str, "%.3f", t.second.l);
-//            publishText(pos,str,"world","tendon_length",message_id++,COLOR(1,1,1,1),1,0.01);
-//        }
-//    }
-    if(visualize_force){
+    if (visualize_tendon_length) {
+        for (auto t:tendon) {
+            if(t.second.viaPoints.empty())
+                continue;
+            Vector3d pos = convertGeometryToEigen(t.second.viaPoints[0]);
+            char str[100];
+            sprintf(str, "l=%.3fm ld=%.3fm/s", t.second.l, t.second.ld);
+            publishText(pos, str, "world", "tendon_length", message_id++, COLOR(1, 1, 1, 1), 1, 0.01);
+        }
+    }
+    if (visualize_force) {
         visualization_msgs::Marker arrow;
         arrow.header.frame_id = "world";
         arrow.ns = "force";
@@ -235,9 +262,9 @@ void CardsflowRviz::visualize() {
         for (auto t:tendon) {
             for (int i = 1; i < t.second.viaPoints.size(); i++) {
                 geometry_msgs::Vector3 dir;
-                dir.x = t.second.viaPoints[i].x-t.second.viaPoints[i - 1].x;
-                dir.y = t.second.viaPoints[i].y-t.second.viaPoints[i - 1].y;
-                dir.z = t.second.viaPoints[i].z-t.second.viaPoints[i - 1].z;
+                dir.x = t.second.viaPoints[i].x - t.second.viaPoints[i - 1].x;
+                dir.y = t.second.viaPoints[i].y - t.second.viaPoints[i - 1].y;
+                dir.z = t.second.viaPoints[i].z - t.second.viaPoints[i - 1].z;
                 // actio
                 arrow.id = message_id++;
                 arrow.color.r = 0.0f;
@@ -273,6 +300,46 @@ void CardsflowRviz::visualize() {
                 visualization_pub.publish(arrow);
             }
         }
+    }
+}
+
+void CardsflowRviz::visualizeTorque() {
+    int message_id = 20000;
+    visualization_msgs::Marker arrow;
+    arrow.header.frame_id = "world";
+    arrow.ns = "torque";
+    arrow.type = visualization_msgs::Marker::ARROW;
+    arrow.color.a = 1.0;
+    arrow.lifetime = ros::Duration(1);
+    arrow.scale.x = 0.005;
+    arrow.scale.y = 0.01;
+    arrow.scale.z = 0.01;
+    arrow.pose.orientation.w = 1;
+    arrow.pose.orientation.x = 0;
+    arrow.pose.orientation.y = 0;
+    arrow.pose.orientation.z = 0;
+
+    arrow.action = visualization_msgs::Marker::ADD;
+
+    for (auto origin:joint_origin) {
+        geometry_msgs::Vector3 axis = joint_axis[origin.first];
+        double t = torque[origin.first];
+        arrow.id = message_id++;
+        arrow.color.r = 1.0f;
+        arrow.color.g = 0.0f;
+        arrow.color.b = 0.0f;
+        arrow.header.stamp = ros::Time::now();
+        arrow.points.clear();
+        geometry_msgs::Point p;
+        p.x = origin.second.x;
+        p.y = origin.second.y;
+        p.z = origin.second.z;
+        arrow.points.push_back(p);
+        p.x += axis.x * t * 0.0001; // show fraction of torque
+        p.y += axis.y * t * 0.0001;
+        p.z += axis.z * t * 0.0001;
+        arrow.points.push_back(p);
+        visualization_pub.publish(arrow);
     }
 }
 

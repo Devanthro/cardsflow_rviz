@@ -33,7 +33,7 @@
 #include <geometry_msgs/PoseStamped.h>
 #include <roboy_communication_simulation/Tendon.h>
 #include <moveit_msgs/DisplayRobotState.h>
-#include <sensor_msgs/JointState.h>
+#include <roboy_communication_simulation/JointState.h>
 
 #include <map>
 #include <thread>
@@ -93,9 +93,19 @@ public Q_SLOTS:
     void show_torque();
 
     /**
-     * Visualization
+     * Visualization of Mesh
      */
-    void visualize();
+    void visualizeMesh();
+
+    /**
+     * Visualization of Tendon
+     */
+    void visualizeTendon();
+
+    /**
+     * Visualization of Torque
+     */
+    void visualizeTorque();
 
 private:
     /**
@@ -108,15 +118,21 @@ private:
      * @param msg
      */
     void TendonState(const roboy_communication_simulation::TendonConstPtr &msg);
+    /**
+     * Callback for Joint state messages
+     * @param msg
+     */
+    void JointState(const roboy_communication_simulation::JointStateConstPtr &msg);
 Q_SIGNALS:
-    void newData();
+    void visualizeMeshSignal();
+    void visualizeTendonSignal();
+    void visualizeTorqueSignal();
 private:
     ros::NodeHandlePtr nh;
     boost::shared_ptr<ros::AsyncSpinner> spinner;
-    ros::Subscriber robot_state, tendon_state;
+    ros::Subscriber robot_state, tendon_state, joint_state;
     tf::TransformListener tf_listener;
     tf::TransformBroadcaster tf_broadcaster;
-    ros::Publisher robot_state_pub, joint_state_pub;
     map<string, geometry_msgs::Pose> pose;
     struct Tendon{
         float force;
@@ -125,6 +141,9 @@ private:
         vector<geometry_msgs::Vector3> viaPoints;
     };
     map<string, Tendon> tendon;
+    map<string, geometry_msgs::Vector3> joint_origin;
+    map<string, geometry_msgs::Vector3> joint_axis;
+    map<string, double> torque;
     bool visualize_mesh, visualize_tendon, visualize_tendon_length, visualize_force, visualize_torque;
     QPushButton *show_mesh_button, *show_tendon_button, *show_force_button, *show_torque_button, *show_tendon_length_button;
     string robot_name;
