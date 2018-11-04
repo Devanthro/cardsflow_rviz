@@ -5,6 +5,7 @@
 #include <QCheckBox>
 #include <QPushButton>
 #include <QLineEdit>
+#include <QSlider>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
@@ -144,7 +145,8 @@ private:
     map<string, geometry_msgs::Vector3> joint_origin;
     map<string, geometry_msgs::Vector3> joint_axis;
     map<string, double> torque;
-    bool visualize_mesh, visualize_tendon, visualize_tendon_length, visualize_force, visualize_torque;
+    bool visualize_mesh = true, visualize_tendon = true, visualize_tendon_length = true, visualize_force = false, visualize_torque = false;
     QPushButton *show_mesh_button, *show_tendon_button, *show_force_button, *show_torque_button, *show_tendon_length_button;
+    QSlider *mesh_transparency, *cable_thickness, *tendon_length_text_size;
     string robot_name;
 };
