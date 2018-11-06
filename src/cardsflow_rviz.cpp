@@ -108,9 +108,9 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
 
     spinner = boost::shared_ptr<ros::AsyncSpinner>(new ros::AsyncSpinner(0));
 
-    robot_state = nh->subscribe("/robot_state", 500, &CardsflowRviz::RobotState, this);
-    tendon_state = nh->subscribe("/tendon_state", 500, &CardsflowRviz::TendonState, this);
-    joint_state = nh->subscribe("/joint_state", 500, &CardsflowRviz::JointState, this);
+    robot_state = nh->subscribe("/robot_state", 100, &CardsflowRviz::RobotState, this);
+    tendon_state = nh->subscribe("/tendon_state", 100, &CardsflowRviz::TendonState, this);
+    joint_state = nh->subscribe("/joint_state", 100, &CardsflowRviz::JointState, this);
 
     if (!nh->hasParam("robot_name"))
         ROS_FATAL("robot_name could not be found on parameter server!!! ");
@@ -319,9 +319,9 @@ void CardsflowRviz::visualizeTendon() {
                 p.y = t.second.viaPoints[i - 1].y;
                 p.z = t.second.viaPoints[i - 1].z;
                 arrow.points.push_back(p);
-                p.x += dir.x * 0.001; // show fraction of force
-                p.y += dir.y * 0.001;
-                p.z += dir.z * 0.001;
+                p.x += dir.x * t.second.force * 0.001; // show fraction of force
+                p.y += dir.y * t.second.force * 0.001;
+                p.z += dir.z * t.second.force * 0.001;
                 arrow.points.push_back(p);
                 visualization_pub.publish(arrow);
                 // reactio
@@ -335,9 +335,9 @@ void CardsflowRviz::visualizeTendon() {
                 p.y = t.second.viaPoints[i].y;
                 p.z = t.second.viaPoints[i].z;
                 arrow.points.push_back(p);
-                p.x -= dir.x * 0.001;
-                p.y -= dir.y * 0.001;
-                p.z -= dir.z * 0.001;
+                p.x -= dir.x * t.second.force * 0.001;
+                p.y -= dir.y * t.second.force * 0.001;
+                p.z -= dir.z * t.second.force * 0.001;
                 arrow.points.push_back(p);
                 visualization_pub.publish(arrow);
             }
