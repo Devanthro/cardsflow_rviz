@@ -94,9 +94,14 @@ public Q_SLOTS:
     void show_torque();
 
     /**
-     * Visualization of Mesh
+     * Visualization of Pose
      */
-    void visualizeMesh();
+    void visualizePose();
+
+    /**
+     * Visualization of Pose Target
+     */
+    void visualizePoseTarget();
 
     /**
      * Visualization of Tendon
@@ -104,9 +109,19 @@ public Q_SLOTS:
     void visualizeTendon();
 
     /**
+     * Visualization of Tendon Target
+     */
+    void visualizeTendonTarget();
+
+    /**
      * Visualization of Torque
      */
     void visualizeTorque();
+
+    /**
+     * Visualization of Torque Target
+     */
+    void visualizeTorqueTarget();
 
 private:
     /**
@@ -115,37 +130,56 @@ private:
      */
     void RobotState(const geometry_msgs::PoseStampedConstPtr &msg);
     /**
+     * Callback to robot state target messages
+     * @param msg
+     */
+    void RobotStateTarget(const geometry_msgs::PoseStampedConstPtr &msg);
+    /**
      * Callback for Tendon state messages
      * @param msg
      */
     void TendonState(const roboy_communication_simulation::TendonConstPtr &msg);
     /**
+     * Callback for Tendon state target messages
+     * @param msg
+     */
+    void TendonStateTarget(const roboy_communication_simulation::TendonConstPtr &msg);
+    /**
      * Callback for Joint state messages
      * @param msg
      */
     void JointState(const roboy_communication_simulation::JointStateConstPtr &msg);
+    /**
+     * Callback for Joint state target messages
+     * @param msg
+     */
+    void JointStateTarget(const roboy_communication_simulation::JointStateConstPtr &msg);
 Q_SIGNALS:
-    void visualizeMeshSignal();
+    void visualizePoseSignal();
+    void visualizePoseTargetSignal();
     void visualizeTendonSignal();
+    void visualizeTendonTargetSignal();
     void visualizeTorqueSignal();
+    void visualizeTorqueTargetSignal();
 private:
     ros::NodeHandlePtr nh;
     boost::shared_ptr<ros::AsyncSpinner> spinner;
-    ros::Subscriber robot_state, tendon_state, joint_state;
+    ros::Subscriber robot_state, tendon_state, joint_state, robot_state_target, tendon_state_target, joint_state_target;
     tf::TransformListener tf_listener;
     tf::TransformBroadcaster tf_broadcaster;
-    map<string, geometry_msgs::Pose> pose;
+    map<string, geometry_msgs::Pose> pose, pose_target;
     struct Tendon{
         float force;
         float l;
         float ld;
         vector<geometry_msgs::Vector3> viaPoints;
     };
-    map<string, Tendon> tendon;
-    map<string, geometry_msgs::Vector3> joint_origin;
-    map<string, geometry_msgs::Vector3> joint_axis;
-    map<string, double> torque;
-    bool visualize_mesh = true, visualize_tendon = true, visualize_tendon_length = true, visualize_force = false, visualize_torque = false;
+    map<string, Tendon> tendon, tendon_target;
+    map<string, geometry_msgs::Vector3> joint_origin, joint_origin_target;
+    map<string, geometry_msgs::Vector3> joint_axis, joint_axis_target;
+    map<string, double> torque, torque_target;
+    bool visualize_pose = true, visualize_tendon = true, visualize_tendon_length = true, visualize_force = false, visualize_torque = false;
+    bool visualize_pose_target = true, visualize_tendon_target = true, visualize_tendon_length_target = true, visualize_force_target = false, visualize_torque_target = false;
     QPushButton *show_mesh_button, *show_tendon_button, *show_force_button, *show_torque_button, *show_tendon_length_button;
     QSlider *mesh_transparency, *cable_thickness, *tendon_length_text_size;
     string robot_name;
