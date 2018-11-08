@@ -124,9 +124,11 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
     QObject::connect(this, SIGNAL(visualizePoseSignal()), this, SLOT(visualizePose()));
     QObject::connect(this, SIGNAL(visualizePoseTargetSignal()), this, SLOT(visualizePoseTarget()));
     QObject::connect(this, SIGNAL(visualizeTendonSignal()), this, SLOT(visualizeTendon()));
-    QObject::connect(this, SIGNAL(visualizeTendonTargetSignal()), this, SLOT(visualizeTargetTendon()));
+    QObject::connect(this, SIGNAL(visualizeTendonTargetSignal()), this, SLOT(visualizeTendonTarget()));
     QObject::connect(this, SIGNAL(visualizeTorqueSignal()), this, SLOT(visualizeTorque()));
     QObject::connect(this, SIGNAL(visualizeTorqueTargetSignal()), this, SLOT(visualizeTorqueTarget()));
+
+    publish_as_marker_array = true;
 }
 
 CardsflowRviz::~CardsflowRviz() {
@@ -419,10 +421,10 @@ void CardsflowRviz::visualizeTendonTarget() {
         line_strip.action = visualization_msgs::Marker::ADD;
         line_strip.type = visualization_msgs::Marker::LINE_STRIP;
         line_strip.scale.x = (cable_thickness->value()/100.0)*0.05;
-        line_strip.color.b = 1.0;
+        line_strip.color.g = 1.0;
         line_strip.color.a = 1.0;
         line_strip.pose.orientation.w = 1.0;
-        line_strip.lifetime = ros::Duration(1);
+        line_strip.lifetime = ros::Duration(0);
         for (auto t:tendon_target) {
             line_strip.header.stamp = ros::Time::now();
             line_strip.points.clear();
@@ -459,7 +461,7 @@ void CardsflowRviz::visualizeTendonTarget() {
         arrow.ns = "force_target";
         arrow.type = visualization_msgs::Marker::ARROW;
         arrow.color.a = 1.0;
-        arrow.lifetime = ros::Duration(1);
+        arrow.lifetime = ros::Duration(0);
         arrow.scale.x = 0.005;
         arrow.scale.y = 0.01;
         arrow.scale.z = 0.01;
