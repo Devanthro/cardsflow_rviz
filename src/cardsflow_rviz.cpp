@@ -204,7 +204,7 @@ void CardsflowRviz::RobotStateTarget(const geometry_msgs::PoseStampedConstPtr &m
             emit visualizePoseTargetSignal();
 }
 
-void CardsflowRviz::TendonState(const roboy_communication_simulation::TendonConstPtr &msg) {
+void CardsflowRviz::TendonState(const roboy_simulation_msgs::TendonConstPtr &msg) {
     int offset = 0;
     for (int i = 0; i < msg->name.size(); i++) {
         Tendon t;
@@ -212,7 +212,7 @@ void CardsflowRviz::TendonState(const roboy_communication_simulation::TendonCons
         t.l = msg->l[i];
         t.ld = msg->ld[i];
         for (int v = 0; v < msg->number_of_viapoints[i]; v++) {
-            t.viaPoints.push_back(msg->viaPoints[v + offset]);
+            t.viaPoints.push_back(msg->viapoints[v + offset]);
         }
         tendon[msg->name[i]] = t;
         offset += msg->number_of_viapoints[i];
@@ -221,7 +221,7 @@ void CardsflowRviz::TendonState(const roboy_communication_simulation::TendonCons
             emit visualizeTendonSignal();
 }
 
-void CardsflowRviz::TendonStateTarget(const roboy_communication_simulation::TendonConstPtr &msg) {
+void CardsflowRviz::TendonStateTarget(const roboy_simulation_msgs::TendonConstPtr &msg) {
     int offset = 0;
     for (int i = 0; i < msg->name.size(); i++) {
         Tendon t;
@@ -229,7 +229,7 @@ void CardsflowRviz::TendonStateTarget(const roboy_communication_simulation::Tend
         t.l = msg->l[i];
         t.ld = msg->ld[i];
         for (int v = 0; v < msg->number_of_viapoints[i]; v++) {
-            t.viaPoints.push_back(msg->viaPoints[v + offset]);
+            t.viaPoints.push_back(msg->viapoints[v + offset]);
         }
         tendon_target[msg->name[i]] = t;
         offset += msg->number_of_viapoints[i];
@@ -238,7 +238,7 @@ void CardsflowRviz::TendonStateTarget(const roboy_communication_simulation::Tend
         emit visualizeTendonTargetSignal();
 }
 
-void CardsflowRviz::JointState(const roboy_communication_simulation::JointStateConstPtr &msg) {
+void CardsflowRviz::JointState(const roboy_simulation_msgs::JointStateConstPtr &msg) {
     int j = 0;
     for (auto name:msg->names) {
         joint_origin[name] = msg->origin[j];
@@ -250,7 +250,7 @@ void CardsflowRviz::JointState(const roboy_communication_simulation::JointStateC
         emit visualizeTorqueSignal();
 }
 
-void CardsflowRviz::JointStateTarget(const roboy_communication_simulation::JointStateConstPtr &msg) {
+void CardsflowRviz::JointStateTarget(const roboy_simulation_msgs::JointStateConstPtr &msg) {
     int j = 0;
     for (auto name:msg->names) {
         joint_origin[name] = msg->origin[j];
