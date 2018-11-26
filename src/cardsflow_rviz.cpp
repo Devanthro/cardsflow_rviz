@@ -346,7 +346,7 @@ void CardsflowRviz::visualizeTendon() {
                 continue;
             Vector3d pos = convertGeometryToEigen(t.second.viaPoints[0]);
             char str[100];
-            sprintf(str, "l=%.3fm ld=%.3fm/s", t.second.l, t.second.ld);
+            sprintf(str, "%s l=%.3fm ld=%.3fm/s", t.first.c_str(), t.second.l, t.second.ld);
             publishText(pos, str, "world", "tendon_length", message_id++, COLOR(1, 1, 1, 1), 1, (tendon_length_text_size->value()/100.0)*0.1);
         }
     }
