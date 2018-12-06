@@ -32,9 +32,9 @@
 #include <common_utilities/rviz_visualization.hpp>
 
 #include <geometry_msgs/PoseStamped.h>
-#include <roboy_communication_simulation/Tendon.h>
+#include <roboy_simulation_msgs/Tendon.h>
 #include <moveit_msgs/DisplayRobotState.h>
-#include <roboy_communication_simulation/JointState.h>
+#include <roboy_simulation_msgs/JointState.h>
 
 #include <map>
 #include <thread>
@@ -138,22 +138,22 @@ private:
      * Callback for Tendon state messages
      * @param msg
      */
-    void TendonState(const roboy_communication_simulation::TendonConstPtr &msg);
+    void TendonState(const roboy_simulation_msgs::TendonConstPtr &msg);
     /**
      * Callback for Tendon state target messages
      * @param msg
      */
-    void TendonStateTarget(const roboy_communication_simulation::TendonConstPtr &msg);
+    void TendonStateTarget(const roboy_simulation_msgs::TendonConstPtr &msg);
     /**
      * Callback for Joint state messages
      * @param msg
      */
-    void JointState(const roboy_communication_simulation::JointStateConstPtr &msg);
+    void JointState(const roboy_simulation_msgs::JointStateConstPtr &msg);
     /**
      * Callback for Joint state target messages
      * @param msg
      */
-    void JointStateTarget(const roboy_communication_simulation::JointStateConstPtr &msg);
+    void JointStateTarget(const roboy_simulation_msgs::JointStateConstPtr &msg);
 Q_SIGNALS:
     void visualizePoseSignal();
     void visualizePoseTargetSignal();

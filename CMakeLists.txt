@@ -10,7 +10,7 @@ SET(CMAKE_BUILD_TYPE Debug)
 # Dependencies
 #==============================================================================
 find_package(catkin REQUIRED COMPONENTS roscpp std_msgs message_generation rviz tf tf_conversions visualization_msgs
-		roboy_communication_middleware common_utilities )
+		roboy_middleware_msgs common_utilities )
 
 # Qt5
 # Find includes in corresponding build directories
@@ -28,7 +28,7 @@ include_directories(${EIGEN3_INCLUDE_DIRS})
 pkg_check_modules( yaml-cpp REQUIRED yaml-cpp)
 include_directories(${yaml-cpp_INCLUDE_DIRS})
 
-catkin_package(CATKIN_DEPENDS message_runtime roboy_communication_middleware common_utilities INCLUDE_DIRS include)
+catkin_package(CATKIN_DEPENDS message_runtime roboy_middleware_msgs common_utilities INCLUDE_DIRS include)
 
 include_directories(
 		include/
