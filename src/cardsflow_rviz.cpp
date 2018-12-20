@@ -35,6 +35,13 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
     mesh_transparency->setValue(100);
     connectWidget->layout()->addWidget(mesh_transparency);
 
+    show_collision_button = new QPushButton(tr("show_collision"));
+    show_collision_button->setObjectName("show_collision");
+    show_collision_button->setCheckable(true);
+    show_collision_button->setChecked(true);
+    connect(show_collision_button, SIGNAL(clicked()), this, SLOT(show_collision()));
+    connectWidget->layout()->addWidget(show_collision_button);
+
     show_tendon_button = new QPushButton(tr("show_tendon"));
     show_tendon_button->setObjectName("show_tendon");
     show_tendon_button->setCheckable(true);
@@ -116,12 +123,13 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
     tendon_state_target = nh->subscribe("/tendon_state_target", 100, &CardsflowRviz::TendonStateTarget, this);
     joint_state_target = nh->subscribe("/joint_state_target", 100, &CardsflowRviz::JointStateTarget, this);
 
-    if (!nh->hasParam("robot_name"))
-        ROS_FATAL("robot_name could not be found on parameter server!!! ");
+    if (!nh->hasParam("model_name"))
+        ROS_FATAL("model_name could not be found on parameter server!!! ");
     else
-        nh->getParam("robot_name", robot_name);
+        nh->getParam("model_name", model_name);
 
     QObject::connect(this, SIGNAL(visualizePoseSignal()), this, SLOT(visualizePose()));
+    QObject::connect(this, SIGNAL(visualizeCollisionSignal()), this, SLOT(visualizeCollision()));
     QObject::connect(this, SIGNAL(visualizePoseTargetSignal()), this, SLOT(visualizePoseTarget()));
     QObject::connect(this, SIGNAL(visualizeTendonSignal()), this, SLOT(visualizeTendon()));
     QObject::connect(this, SIGNAL(visualizeTendonTargetSignal()), this, SLOT(visualizeTendonTarget()));
@@ -176,6 +184,10 @@ void CardsflowRviz::show_mesh() {
     visualize_pose = show_mesh_button->isChecked();
 }
 
+void CardsflowRviz::show_collision() {
+    visualize_collisions = show_collision_button->isChecked();
+}
+
 void CardsflowRviz::show_tendon() {
     visualize_tendon = show_tendon_button->isChecked();
 }
@@ -196,6 +208,8 @@ void CardsflowRviz::RobotState(const geometry_msgs::PoseStampedConstPtr &msg) {
     pose[msg->header.frame_id] = msg->pose;
     if (visualize_pose)
             emit visualizePoseSignal();
+    if (visualize_collisions)
+            emit visualizeCollisionSignal();
 }
 
 void CardsflowRviz::RobotStateTarget(const geometry_msgs::PoseStampedConstPtr &msg) {
@@ -263,21 +277,21 @@ void CardsflowRviz::JointStateTarget(const roboy_simulation_msgs::JointStateCons
 }
 
 void CardsflowRviz::visualizePose() {
-    // Allow change of robot_name during visualization
-    if (nh->hasParam("robot_name")) {
+    // Allow change of model_name during visualization
+    if (nh->hasParam("model_name")) {
         string prev_robot_name;
-        prev_robot_name.assign(robot_name);
-        nh->getParam("robot_name", robot_name);
+        prev_robot_name.assign(model_name);
+        nh->getParam("model_name", model_name);
         // Init pose and tendon if changed robot
-        if (robot_name.compare(prev_robot_name)) {
-            ROS_INFO_STREAM("Changing robot from " << prev_robot_name << " to " << robot_name);
+        if (model_name.compare(prev_robot_name)) {
+            ROS_INFO_STREAM("Changing robot from " << prev_robot_name << " to " << model_name);
             pose.clear();
             tendon.clear();
         }
     }
     int message_id = 0;
     for (auto p:pose) {
-        publishMesh("robots", (robot_name + "/meshes/CAD").c_str(), (p.first + ".stl").c_str(), p.second, 0.001,
+        publishMesh("robots", (model_name + "/meshes/visuals").c_str(), (p.first + ".stl").c_str(), p.second, 0.001,
                     "world", "pose", message_id++, 1, COLOR(1,1,1,(mesh_transparency->value()/100.0)));
         tf::Transform bt;
         PoseMsgToTF(p.second, bt);
@@ -285,22 +299,45 @@ void CardsflowRviz::visualizePose() {
     }
 }
 
-void CardsflowRviz::visualizePoseTarget() {
-    // Allow change of robot_name during visualization
-    if (nh->hasParam("robot_name")) {
+void CardsflowRviz::visualizeCollision() {
+    // Allow change of model_name during visualization
+    if (nh->hasParam("model_name")) {
         string prev_robot_name;
-        prev_robot_name.assign(robot_name);
-        nh->getParam("robot_name", robot_name);
+        prev_robot_name.assign(model_name);
+        nh->getParam("model_name", model_name);
         // Init pose and tendon if changed robot
-        if (robot_name.compare(prev_robot_name)) {
-            ROS_INFO_STREAM("Changing robot from " << prev_robot_name << " to " << robot_name);
+        if (model_name.compare(prev_robot_name)) {
+            ROS_INFO_STREAM("Changing robot from " << prev_robot_name << " to " << model_name);
+            pose.clear();
+            tendon.clear();
+        }
+    }
+    int message_id = 500;
+    for (auto p:pose) {
+        publishMesh("robots", (model_name + "/meshes/collisions").c_str(), (p.first + ".stl").c_str(), p.second, 0.001,
+                    "world", "pose", message_id++, 1, COLOR(0.5,0.5,0,0.2));
+        tf::Transform bt;
+        PoseMsgToTF(p.second, bt);
+        tf_broadcaster.sendTransform(tf::StampedTransform(bt, ros::Time::now(), "world", p.first));
+    }
+}
+
+void CardsflowRviz::visualizePoseTarget() {
+    // Allow change of model_name during visualization
+    if (nh->hasParam("model_name")) {
+        string prev_robot_name;
+        prev_robot_name.assign(model_name);
+        nh->getParam("model_name", model_name);
+        // Init pose and tendon if changed robot
+        if (model_name.compare(prev_robot_name)) {
+            ROS_INFO_STREAM("Changing robot from " << prev_robot_name << " to " << model_name);
             pose.clear();
             tendon.clear();
         }
     }
     int message_id = 1000;
     for (auto p:pose_target) {
-        publishMesh("robots", (robot_name + "/meshes/CAD").c_str(), (p.first + ".stl").c_str(), p.second, 0.001,
+        publishMesh("robots", (model_name + "/meshes/CAD").c_str(), (p.first + ".stl").c_str(), p.second, 0.001,
                     "world", "pose_target", message_id++, 0, COLOR(0,1,0,0.3) );
         tf::Transform bt;
         PoseMsgToTF(p.second, bt);

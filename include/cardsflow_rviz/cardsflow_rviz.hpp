@@ -75,6 +75,11 @@ public Q_SLOTS:
     void show_mesh();
 
     /**
+     * Toggles collision visualization
+     */
+    void show_collision();
+
+    /**
      * Toggles tendon visualization
      */
     void show_tendon();
@@ -97,6 +102,11 @@ public Q_SLOTS:
      * Visualization of Pose
      */
     void visualizePose();
+
+    /**
+     * Visualization of Collision Shapes
+     */
+    void visualizeCollision();
 
     /**
      * Visualization of Pose Target
@@ -156,6 +166,7 @@ private:
     void JointStateTarget(const roboy_simulation_msgs::JointStateConstPtr &msg);
 Q_SIGNALS:
     void visualizePoseSignal();
+    void visualizeCollisionSignal();
     void visualizePoseTargetSignal();
     void visualizeTendonSignal();
     void visualizeTendonTargetSignal();
@@ -178,9 +189,9 @@ private:
     map<string, geometry_msgs::Vector3> joint_origin, joint_origin_target;
     map<string, geometry_msgs::Vector3> joint_axis, joint_axis_target;
     map<string, double> torque, torque_target;
-    bool visualize_pose = true, visualize_tendon = true, visualize_tendon_length = true, visualize_force = false, visualize_torque = false;
+    bool visualize_pose = true, visualize_collisions = true, visualize_tendon = true, visualize_tendon_length = true, visualize_force = false, visualize_torque = false;
     bool visualize_pose_target = true, visualize_tendon_target = true, visualize_tendon_length_target = true, visualize_force_target = false, visualize_torque_target = false;
-    QPushButton *show_mesh_button, *show_tendon_button, *show_force_button, *show_torque_button, *show_tendon_length_button;
+    QPushButton *show_mesh_button, *show_collision_button, *show_tendon_button, *show_force_button, *show_torque_button, *show_tendon_length_button;
     QSlider *mesh_transparency, *cable_thickness, *tendon_length_text_size;
-    string robot_name;
+    string model_name;
 };
