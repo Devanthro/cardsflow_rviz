@@ -42,6 +42,13 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
     connect(show_collision_button, SIGNAL(clicked()), this, SLOT(show_collision()));
     connectWidget->layout()->addWidget(show_collision_button);
 
+    show_target_button = new QPushButton(tr("show_target"));
+    show_target_button->setObjectName("show_target");
+    show_target_button->setCheckable(true);
+    show_target_button->setChecked(true);
+    connect(show_target_button, SIGNAL(clicked()), this, SLOT(show_target()));
+    connectWidget->layout()->addWidget(show_target_button);
+
     show_tendon_button = new QPushButton(tr("show_tendon"));
     show_tendon_button->setObjectName("show_tendon");
     show_tendon_button->setCheckable(true);
@@ -129,6 +136,7 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
         nh->getParam("model_name", model_name);
 
     QObject::connect(this, SIGNAL(visualizePoseSignal()), this, SLOT(visualizePose()));
+    QObject::connect(this, SIGNAL(visualizeTargetSignal()), this, SLOT(visualizeTarget()));
     QObject::connect(this, SIGNAL(visualizeCollisionSignal()), this, SLOT(visualizeCollision()));
     QObject::connect(this, SIGNAL(visualizePoseTargetSignal()), this, SLOT(visualizePoseTarget()));
     QObject::connect(this, SIGNAL(visualizeTendonSignal()), this, SLOT(visualizeTendon()));
@@ -137,6 +145,8 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
     QObject::connect(this, SIGNAL(visualizeTorqueTargetSignal()), this, SLOT(visualizeTorqueTarget()));
 
     publish_as_marker_array = true;
+
+    number_of_markers_to_publish_at_once = 300;
 }
 
 CardsflowRviz::~CardsflowRviz() {
@@ -147,6 +157,10 @@ void CardsflowRviz::load(const rviz::Config &config) {
     QVariant value;
     config.mapGetValue(show_mesh_button->objectName(), &value);
     show_mesh_button->setChecked(value.toBool());
+    config.mapGetValue(show_collision_button->objectName(), &value);
+    show_collision_button->setChecked(value.toBool());
+    config.mapGetValue(show_target_button->objectName(), &value);
+    show_target_button->setChecked(value.toBool());
     config.mapGetValue(show_tendon_button->objectName(), &value);
     show_tendon_button->setChecked(value.toBool());
     config.mapGetValue(show_tendon_length_button->objectName(), &value);
@@ -162,6 +176,8 @@ void CardsflowRviz::load(const rviz::Config &config) {
     config.mapGetValue(tendon_length_text_size->objectName(), &value);
     tendon_length_text_size->setValue(value.toInt());
     show_mesh();
+    show_collision();
+    show_target();
     show_tendon();
     show_tendon_length();
     show_force();
@@ -170,6 +186,8 @@ void CardsflowRviz::load(const rviz::Config &config) {
 
 void CardsflowRviz::save(rviz::Config config) const {
     config.mapSetValue(show_mesh_button->objectName(), show_mesh_button->isChecked());
+    config.mapSetValue(show_collision_button->objectName(), show_collision_button->isChecked());
+    config.mapSetValue(show_target_button->objectName(), show_target_button->isChecked());
     config.mapSetValue(show_tendon_button->objectName(), show_tendon_button->isChecked());
     config.mapSetValue(show_tendon_length_button->objectName(), show_tendon_length_button->isChecked());
     config.mapSetValue(show_force_button->objectName(), show_force_button->isChecked());
@@ -186,6 +204,10 @@ void CardsflowRviz::show_mesh() {
 
 void CardsflowRviz::show_collision() {
     visualize_collisions = show_collision_button->isChecked();
+}
+
+void CardsflowRviz::show_target() {
+    visualize_targets = show_target_button->isChecked();
 }
 
 void CardsflowRviz::show_tendon() {
@@ -214,7 +236,7 @@ void CardsflowRviz::RobotState(const geometry_msgs::PoseStampedConstPtr &msg) {
 
 void CardsflowRviz::RobotStateTarget(const geometry_msgs::PoseStampedConstPtr &msg) {
     pose_target[msg->header.frame_id] = msg->pose;
-    if (visualize_pose_target)
+    if (visualize_targets)
             emit visualizePoseTargetSignal();
 }
 
@@ -337,7 +359,7 @@ void CardsflowRviz::visualizePoseTarget() {
     }
     int message_id = 1000;
     for (auto p:pose_target) {
-        publishMesh("robots", (model_name + "/meshes/CAD").c_str(), (p.first + ".stl").c_str(), p.second, 0.001,
+        publishMesh("robots", (model_name + "/meshes/visuals").c_str(), (p.first + ".stl").c_str(), p.second, 0.001,
                     "world", "pose_target", message_id++, 0, COLOR(0,1,0,0.3) );
         tf::Transform bt;
         PoseMsgToTF(p.second, bt);
