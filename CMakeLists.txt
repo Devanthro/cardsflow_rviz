@@ -10,7 +10,7 @@ SET(CMAKE_BUILD_TYPE Debug)
 # Dependencies
 #==============================================================================
 find_package(catkin REQUIRED COMPONENTS roscpp std_msgs message_generation rviz tf tf_conversions visualization_msgs
-		roboy_middleware_msgs common_utilities )
+		roboy_middleware_msgs common_utilities roboy_simulation_msgs)
 
 # Qt5
 # Find includes in corresponding build directories
