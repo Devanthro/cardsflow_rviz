@@ -146,7 +146,7 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
 
     publish_as_marker_array = true;
 
-    number_of_markers_to_publish_at_once = 300;
+    number_of_markers_to_publish_at_once = 1000;
 }
 
 CardsflowRviz::~CardsflowRviz() {
