@@ -124,7 +124,7 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
 
     robot_state = nh->subscribe("/robot_state", 100, &CardsflowRviz::RobotState, this);
     tendon_state = nh->subscribe("/tendon_state", 100, &CardsflowRviz::TendonState, this);
-    joint_state = nh->subscribe("/joint_state", 100, &CardsflowRviz::JointState, this);
+    joint_state = nh->subscribe("/rviz_joint_states", 100, &CardsflowRviz::JointState, this);
 
     robot_state_target = nh->subscribe("/robot_state_target", 100, &CardsflowRviz::RobotStateTarget, this);
     tendon_state_target = nh->subscribe("/tendon_state_target", 100, &CardsflowRviz::TendonStateTarget, this);
@@ -136,7 +136,7 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
         nh->getParam("model_name", model_name);
 
     QObject::connect(this, SIGNAL(visualizePoseSignal()), this, SLOT(visualizePose()));
-    QObject::connect(this, SIGNAL(visualizeTargetSignal()), this, SLOT(visualizeTarget()));
+//    QObject::connect(this, SIGNAL(visualizeTargetSignal()), this, SLOT(visualizeTarget()));
     QObject::connect(this, SIGNAL(visualizeCollisionSignal()), this, SLOT(visualizeCollision()));
     QObject::connect(this, SIGNAL(visualizePoseTargetSignal()), this, SLOT(visualizePoseTarget()));
     QObject::connect(this, SIGNAL(visualizeTendonSignal()), this, SLOT(visualizeTendon()));
