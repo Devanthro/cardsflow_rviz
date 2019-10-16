@@ -35,7 +35,7 @@
 #include <roboy_simulation_msgs/Tendon.h>
 #include <moveit_msgs/DisplayRobotState.h>
 #include <roboy_simulation_msgs/JointState.h>
-
+#include <mutex>
 #include <map>
 #include <thread>
 
@@ -185,6 +185,9 @@ private:
     tf::TransformListener tf_listener;
     tf::TransformBroadcaster tf_broadcaster;
     map<string, geometry_msgs::Pose> pose, pose_target;
+    map<string, bool> not_first_time;
+    map<string, bool> pose_dirty, target_dirty;
+    mutex mux0,mux1;
     struct Tendon{
         float force;
         float l;

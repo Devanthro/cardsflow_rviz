@@ -144,9 +144,9 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
     QObject::connect(this, SIGNAL(visualizeTorqueSignal()), this, SLOT(visualizeTorque()));
     QObject::connect(this, SIGNAL(visualizeTorqueTargetSignal()), this, SLOT(visualizeTorqueTarget()));
 
-    publish_as_marker_array = true;
+    publish_as_marker_array = false;
 
-    number_of_markers_to_publish_at_once = 300;
+    number_of_markers_to_publish_at_once = 5;
 }
 
 CardsflowRviz::~CardsflowRviz() {
@@ -200,43 +200,69 @@ void CardsflowRviz::save(rviz::Config config) const {
 
 void CardsflowRviz::show_mesh() {
     visualize_pose = show_mesh_button->isChecked();
+    if(!visualize_pose)
+        clearAll();
 }
 
 void CardsflowRviz::show_collision() {
     visualize_collisions = show_collision_button->isChecked();
+    if(!visualize_collisions)
+        clearAll();
 }
 
 void CardsflowRviz::show_target() {
     visualize_targets = show_target_button->isChecked();
+    if(!visualize_targets)
+        clearAll();
 }
 
 void CardsflowRviz::show_tendon() {
     visualize_tendon = show_tendon_button->isChecked();
+    if(!visualize_tendon)
+        clearAll();
 }
 
 void CardsflowRviz::show_tendon_length() {
     visualize_tendon_length = show_tendon_length_button->isChecked();
+    if(!visualize_tendon_length)
+        clearAll();
 }
 
 void CardsflowRviz::show_force() {
     visualize_force = show_force_button->isChecked();
+    if(!visualize_force)
+        clearAll();
 }
 
 void CardsflowRviz::show_torque() {
     visualize_torque = show_torque_button->isChecked();
+    if(!visualize_torque)
+        clearAll();
 }
 
 void CardsflowRviz::RobotState(const geometry_msgs::PoseStampedConstPtr &msg) {
-    pose[msg->header.frame_id] = msg->pose;
-    if (visualize_pose)
+    static long counter = 0;
+    counter ++;
+    {
+        lock_guard<mutex> lock(mux0);
+        pose[msg->header.frame_id] = msg->pose;
+        pose_dirty[msg->header.frame_id] = true;
+    }
+    if (visualize_pose && (counter%number_of_markers_to_publish_at_once)==0)
             emit visualizePoseSignal();
-    if (visualize_collisions)
+    if (visualize_collisions && (counter%number_of_markers_to_publish_at_once)==0)
             emit visualizeCollisionSignal();
 }
 
 void CardsflowRviz::RobotStateTarget(const geometry_msgs::PoseStampedConstPtr &msg) {
-    pose_target[msg->header.frame_id] = msg->pose;
-    if (visualize_targets)
+    static long counter = 0;
+    counter ++;
+    {
+        lock_guard<mutex> lock(mux1);
+        pose_target[msg->header.frame_id] = msg->pose;
+        target_dirty[msg->header.frame_id] = true;
+    }
+    if (visualize_targets && (counter%number_of_markers_to_publish_at_once)==0)
             emit visualizePoseTargetSignal();
 }
 
@@ -313,11 +339,26 @@ void CardsflowRviz::visualizePose() {
     }
     int message_id = 0;
     for (auto p:pose) {
-        publishMesh("robots", (model_name + "/meshes/visuals").c_str(), (p.first + ".stl").c_str(), p.second, 0.001,
-                    "world", "pose", message_id++, 1, COLOR(1,1,1,(mesh_transparency->value()/100.0)));
-        tf::Transform bt;
-        PoseMsgToTF(p.second, bt);
-        tf_broadcaster.sendTransform(tf::StampedTransform(bt, ros::Time::now(), "world", p.first));
+        message_id++;
+        if(pose_dirty[p.first]) {
+            lock_guard<mutex> lock(mux0);
+            if (!not_first_time[p.first]) {
+                not_first_time[p.first] = true;
+                publishMesh("robots", (model_name + "/meshes/visuals").c_str(), (p.first + ".stl").c_str(), p.second,
+                            0.001,
+                            "world", "pose", message_id, -1, COLOR(1, 1, 1, (mesh_transparency->value() / 100.0)),
+                            false);
+            } else {
+                publishMesh("robots", (model_name + "/meshes/visuals").c_str(), (p.first + ".stl").c_str(), p.second,
+                            0.001,
+                            "world", "pose", message_id, -1, COLOR(1, 1, 1, (mesh_transparency->value() / 100.0)),
+                            true);
+            }
+            tf::Transform bt;
+            PoseMsgToTF(p.second, bt);
+            tf_broadcaster.sendTransform(tf::StampedTransform(bt, ros::Time::now(), "world", p.first));
+            pose_dirty[p.first] = false;
+        }
     }
 }
 
@@ -359,11 +400,16 @@ void CardsflowRviz::visualizePoseTarget() {
     }
     int message_id = 1000;
     for (auto p:pose_target) {
-        publishMesh("robots", (model_name + "/meshes/visuals").c_str(), (p.first + ".stl").c_str(), p.second, 0.001,
-                    "world", "pose_target", message_id++, 0, COLOR(0,1,0,0.3) );
-        tf::Transform bt;
-        PoseMsgToTF(p.second, bt);
-        tf_broadcaster.sendTransform(tf::StampedTransform(bt, ros::Time::now(), "world", p.first));
+        message_id++;
+        if(target_dirty[p.first]) {
+            lock_guard<mutex> lock(mux1);
+            publishMesh("robots", (model_name + "/meshes/visuals").c_str(), (p.first + ".stl").c_str(), p.second, 0.001,
+                        "world", "pose_target", message_id, -1, COLOR(0, 1, 0, 0.3));
+            tf::Transform bt;
+            PoseMsgToTF(p.second, bt);
+            tf_broadcaster.sendTransform(tf::StampedTransform(bt, ros::Time::now(), "world", p.first));
+            target_dirty[p.first] = false;
+        }
     }
 }
 
