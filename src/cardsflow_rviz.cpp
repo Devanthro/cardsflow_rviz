@@ -354,11 +354,11 @@ void CardsflowRviz::visualizePose() {
                             "world", "pose", message_id, -1, COLOR(1, 1, 1, (mesh_transparency->value() / 100.0)),
                             true);
             }
-            tf::Transform bt;
-            PoseMsgToTF(p.second, bt);
-            tf_broadcaster.sendTransform(tf::StampedTransform(bt, ros::Time::now(), "world", p.first));
             pose_dirty[p.first] = false;
         }
+        tf::Transform bt;
+        PoseMsgToTF(p.second, bt);
+        tf_broadcaster.sendTransform(tf::StampedTransform(bt, ros::Time::now(), "world", p.first));
     }
 }
 
