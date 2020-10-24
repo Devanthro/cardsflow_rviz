@@ -74,6 +74,10 @@ public Q_SLOTS:
      */
     void show_mesh();
 
+    void topic_root_changed();
+
+    void update_subscriptions();
+
     /**
      * Toggles collision visualization
      */
@@ -202,5 +206,7 @@ private:
     bool visualize_tendon_target = true, visualize_tendon_length_target = true, visualize_force_target = false, visualize_torque_target = false;
     QPushButton *show_mesh_button, *show_collision_button, *show_target_button, *show_tendon_button, *show_force_button, *show_torque_button, *show_tendon_length_button;
     QSlider *mesh_transparency, *cable_thickness, *tendon_length_text_size;
-    string model_name;
+    QComboBox *topic_root_box;
+    string model_name, topic_root;
+    vector<std_msgs::ColorRGBA> colors;
 };

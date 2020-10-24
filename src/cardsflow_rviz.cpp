@@ -16,7 +16,13 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
     // ################################################### connect TAB
     QWidget *connectWidget = new QWidget;
     connectWidget->setLayout(new QVBoxLayout);
-    tabPage->addTab(connectWidget, "connect");
+    tabPage->addTab(connectWidget, "cardsflow");
+
+    topic_root_box = new QComboBox(this);
+    topic_root_box->addItem("/roboy/pinky/");
+    topic_root_box->addItem("/roboy/brain/");
+    connect(topic_root_box, SIGNAL(currentTextChanged(QString)), this, SLOT(topic_root_changed()));
+    connectWidget->layout()->addWidget(topic_root_box);
 
     show_mesh_button = new QPushButton(tr("show_mesh"));
     show_mesh_button->setObjectName("show_mesh");
@@ -122,18 +128,8 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
 
     spinner = boost::shared_ptr<ros::AsyncSpinner>(new ros::AsyncSpinner(0));
 
-    robot_state = nh->subscribe("/robot_state", 100, &CardsflowRviz::RobotState, this);
-    tendon_state = nh->subscribe("/tendon_state", 100, &CardsflowRviz::TendonState, this);
-    joint_state = nh->subscribe("/rviz_joint_states", 100, &CardsflowRviz::JointState, this);
-
-    robot_state_target = nh->subscribe("/robot_state_target", 100, &CardsflowRviz::RobotStateTarget, this);
-    tendon_state_target = nh->subscribe("/tendon_state_target", 100, &CardsflowRviz::TendonStateTarget, this);
-    joint_state_target = nh->subscribe("/joint_state_target", 100, &CardsflowRviz::JointStateTarget, this);
-
-    if (!nh->hasParam("model_name"))
-        ROS_FATAL("model_name could not be found on parameter server!!! ");
-    else
-        nh->getParam("model_name", model_name);
+    topic_root = topic_root_box->currentText().toStdString();
+    update_subscriptions();
 
     QObject::connect(this, SIGNAL(visualizePoseSignal()), this, SLOT(visualizePose()));
 //    QObject::connect(this, SIGNAL(visualizeTargetSignal()), this, SLOT(visualizeTarget()));
@@ -147,11 +143,77 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
     publish_as_marker_array = false;
 
     number_of_markers_to_publish_at_once = 5;
+
+    std_msgs::ColorRGBA red, orange, yellow, green, blue, indigo, violet;
+    red.r = 1.0;
+    red.g = 0.0;
+    red.b = 0.0;
+    red.a = 1.0;
+
+    orange.r = 1.0;
+    orange.g = 0.5;
+    orange.b = 0.0;
+    orange.a = 1.0;
+
+    yellow.r = 1.0;
+    yellow.g = 1.0;
+    yellow.b = 0.0;
+    yellow.a = 1.0;
+
+    green.r = 0.0;
+    green.g = 1.0;
+    green.b = 0.0;
+    green.a = 1.0;
+
+    blue.b = 1.0;
+    blue.a = 1.0;
+
+    indigo.r = 46.0/255;
+    indigo.g = 43.0/255;
+    indigo.b = 95.0/255;
+    indigo.a = 1.0;
+
+    violet.r = 139.0/255;
+    violet.b = 1.0;
+    violet.a = 1.0;
+
+    colors.push_back(red);
+    colors.push_back(orange);
+    colors.push_back(yellow);
+    colors.push_back(green);
+    colors.push_back(blue);
+    colors.push_back(indigo);
+    colors.push_back(violet);
+
 }
 
 CardsflowRviz::~CardsflowRviz() {
 }
 
+void CardsflowRviz::update_subscriptions() {
+
+    ROS_INFO_STREAM("Changing topics root to " + topic_root);
+
+    robot_state.shutdown();
+    tendon_state.shutdown();
+    joint_state.shutdown();
+    robot_state_target.shutdown();
+    tendon_state_target.shutdown();
+    joint_state_target.shutdown();
+
+    robot_state = nh->subscribe(topic_root + "/robot_state", 100, &CardsflowRviz::RobotState, this);
+    tendon_state = nh->subscribe(topic_root + "/tendon_state", 100, &CardsflowRviz::TendonState, this);
+    joint_state = nh->subscribe(topic_root + "/rviz_joint_states", 100, &CardsflowRviz::JointState, this);
+
+    robot_state_target = nh->subscribe(topic_root + "/robot_state_target", 100, &CardsflowRviz::RobotStateTarget, this);
+    tendon_state_target = nh->subscribe(topic_root + "/tendon_state_target", 100, &CardsflowRviz::TendonStateTarget, this);
+    joint_state_target = nh->subscribe(topic_root + "/joint_state_target", 100, &CardsflowRviz::JointStateTarget, this);
+
+    if (!nh->hasParam("model_name"))
+        ROS_FATAL("model_name could not be found on parameter server!!! ");
+    else
+        nh->getParam("model_name", model_name);
+}
 void CardsflowRviz::load(const rviz::Config &config) {
     rviz::Panel::load(config);
     QVariant value;
@@ -202,6 +264,11 @@ void CardsflowRviz::show_mesh() {
     visualize_pose = show_mesh_button->isChecked();
     if(!visualize_pose)
         clearAll();
+}
+
+void CardsflowRviz::topic_root_changed() {
+    topic_root =topic_root_box->currentText().toStdString();
+    update_subscriptions();
 }
 
 void CardsflowRviz::show_collision() {
@@ -422,14 +489,15 @@ void CardsflowRviz::visualizeTendon() {
         line_strip.action = visualization_msgs::Marker::ADD;
         line_strip.type = visualization_msgs::Marker::LINE_STRIP;
         line_strip.scale.x = (cable_thickness->value()/100.0)*0.05;
-        line_strip.color.b = 1.0;
-        line_strip.color.a = 1.0;
+//        line_strip.color.b = 1.0;
+//        line_strip.color.a = 1.0;
         line_strip.pose.orientation.w = 1.0;
         line_strip.lifetime = ros::Duration(1);
         for (auto t:tendon) {
             line_strip.header.stamp = ros::Time::now();
             line_strip.points.clear();
             line_strip.id = message_id++;
+            line_strip.color = colors[line_strip.id%7];
             for (int i = 1; i < t.second.viaPoints.size(); i++) {
                 geometry_msgs::Point p;
                 p.x = t.second.viaPoints[i - 1].x;
@@ -447,12 +515,23 @@ void CardsflowRviz::visualizeTendon() {
     message_id = 20000;
     if (visualize_tendon_length) {
         for (auto t:tendon) {
+            auto len = t.second.viaPoints.size();
             if(t.second.viaPoints.empty())
                 continue;
-            Vector3d pos = convertGeometryToEigen(t.second.viaPoints[0]);
+            Vector3d pos = convertGeometryToEigen(t.second.viaPoints[len-1]);
+            pos[2] += 0.01;
             char str[100];
-            sprintf(str, "%s l=%.3fm ld=%.3fm/s", t.first.c_str(), t.second.l, t.second.ld);
-            publishText(pos, str, "world", "tendon_length", message_id++, COLOR(1, 1, 1, 1), 1, (tendon_length_text_size->value()/100.0)*0.1);
+//            sprintf(str, "%s l=%.3fm ld=%.3fm/s", t.first.c_str(), t.second.l, t.second.ld);
+            sprintf(str, "%s", t.first.c_str());
+            publishText(pos, str, "world", "tendon_length", message_id++, COLOR(0,0,1, 1), 1, (tendon_length_text_size->value()/100.0)*0.2);
+
+            pos = convertGeometryToEigen(t.second.viaPoints[len-2]);
+//            publishText(pos, str, "world", "tendon_length", message_id++, COLOR(0,0,1, 1), 1, (tendon_length_text_size->value()/100.0)*0.2);
+//            for (auto vp: t.second.viaPoints) {
+//                Vector3d pos = convertGeometryToEigen(vp);
+//                publishText(pos, str, "world", "tendon_length", message_id++, COLOR(1, 1, 1, 1), 1, (tendon_length_text_size->value()/100.0)*0.1);
+//            }
+
         }
     }
     message_id = 30000;
