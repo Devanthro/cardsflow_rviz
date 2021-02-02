@@ -201,13 +201,13 @@ void CardsflowRviz::update_subscriptions() {
     tendon_state_target.shutdown();
     joint_state_target.shutdown();
 
-    robot_state = nh->subscribe(topic_root + "/robot_state", 100, &CardsflowRviz::RobotState, this);
-    tendon_state = nh->subscribe(topic_root + "/tendon_state", 100, &CardsflowRviz::TendonState, this);
-    joint_state = nh->subscribe(topic_root + "/rviz_joint_states", 100, &CardsflowRviz::JointState, this);
+    robot_state = nh->subscribe(topic_root + "control/robot_state", 100, &CardsflowRviz::RobotState, this);
+    tendon_state = nh->subscribe(topic_root + "control/tendon_state", 100, &CardsflowRviz::TendonState, this);
+    joint_state = nh->subscribe(topic_root + "control/rviz_joint_states", 100, &CardsflowRviz::JointState, this);
 
-    robot_state_target = nh->subscribe(topic_root + "/robot_state_target", 100, &CardsflowRviz::RobotStateTarget, this);
-    tendon_state_target = nh->subscribe(topic_root + "/tendon_state_target", 100, &CardsflowRviz::TendonStateTarget, this);
-    joint_state_target = nh->subscribe(topic_root + "/joint_state_target", 100, &CardsflowRviz::JointStateTarget, this);
+    robot_state_target = nh->subscribe(topic_root + "control/robot_state_target", 100, &CardsflowRviz::RobotStateTarget, this);
+    tendon_state_target = nh->subscribe(topic_root + "control/tendon_state_target", 100, &CardsflowRviz::TendonStateTarget, this);
+    joint_state_target = nh->subscribe(topic_root + "control/joint_state_target", 100, &CardsflowRviz::JointStateTarget, this);
 
     if (!nh->hasParam("model_name"))
         ROS_FATAL("model_name could not be found on parameter server!!! ");
