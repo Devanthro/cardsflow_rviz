@@ -21,6 +21,7 @@ CardsflowRviz::CardsflowRviz(QWidget *parent)
     topic_root_box = new QComboBox(this);
     topic_root_box->addItem("/roboy/pinky/");
     topic_root_box->addItem("/roboy/brain/");
+    topic_root_box->addItem("/devanthro/oxford/");
     connect(topic_root_box, SIGNAL(currentTextChanged(QString)), this, SLOT(topic_root_changed()));
     connectWidget->layout()->addWidget(topic_root_box);
 
